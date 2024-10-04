@@ -54,6 +54,8 @@ namespace _tempDirCleaner
                     Utility.AddLogLine ($"[{xTarget.DirectoryPath}]");
                     Utility.AddLogLine ("Options: " + xTarget.Options);
 
+                    Console.WriteLine ($"Cleaning: {xTarget.DirectoryPath}");
+
                     bool xDeletesAllFiles = xTarget.Options.HasFlag (CleaningOptions.DeleteAllFiles),
                          xDeletesEmptyDirectories = xTarget.Options.HasFlag (CleaningOptions.DeleteEmptyDirectories);
 
