@@ -105,7 +105,7 @@ namespace _tempDirCleaner
                                 catch
                                 {
                                     Utility.AddLogLine ($"Error deleting file: {xFile.FullName}");
-                                    Console.WriteLine ($"\rError deleting file: {xFile.FullName}");
+                                    // Console.WriteLine ($"\rError deleting file: {xFile.FullName}"); // Doesnt seem like a big deal.
                                 }
 
                                 finally
@@ -134,7 +134,7 @@ namespace _tempDirCleaner
                                 catch
                                 {
                                     Utility.AddLogLine ($"Error deleting directory: {directory.FullName}");
-                                    Console.WriteLine ($"\rError deleting directory: {directory.FullName}");
+                                    // Console.WriteLine ($"\rError deleting directory: {directory.FullName}");
                                 }
                             }
                         }
@@ -142,7 +142,7 @@ namespace _tempDirCleaner
                         catch
                         {
                             Utility.AddLogLine ($"Error handling directory: {directory.FullName}");
-                            Console.WriteLine ($"\rError handling directory: {directory.FullName}");
+                            // Console.WriteLine ($"\rError handling directory: {directory.FullName}");
                         }
 
                         finally

@@ -16,10 +16,14 @@
 
         <Configuration></Configuration>
 
-        <Version>0.2</Version>
+        <Version>0.2</Version><!-- Update App.manifest too. -->
         <AssemblyVersion></AssemblyVersion>
         <FileVersion></FileVersion>
         <InformationalVersion></InformationalVersion>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <ApplicationManifest>App.manifest</ApplicationManifest>
     </PropertyGroup>
 
 </Project>
