@@ -24,7 +24,7 @@ namespace _tempDirCleaner
                     {
                         string xDirectoryPath = xParts [0].Trim ();
 
-                        if (Directory.Exists (xDirectoryPath))
+                        if (Directory.Exists (xDirectoryPath) || Path.IsPathFullyQualified (xDirectoryPath)) // Currently nonexistent directories are allowed.
                         {
                             if (Enum.TryParse <CleaningOptions> (xParts [1].Trim (), ignoreCase: true, out var xOptions))
                             {
@@ -40,16 +40,22 @@ namespace _tempDirCleaner
                     throw new Exception ($"Invalid line in {Utility.TargetsFileName}: {xLine}");
                 }
 
-                if (xTargets.Count == 0)
+                if (xTargets.Where (x => Directory.Exists (x.DirectoryPath)).Count () == 0)
                     throw new Exception ($"No valid targets found in {Utility.TargetsFileName}.");
 
                 var xSortedTargets = xTargets.OrderBy (x => x.DirectoryPath, StringComparer.OrdinalIgnoreCase).ToArray ();
 
                 Utility.AddLogLine ("[Targets]");
-                Utility.AddLogLine (string.Join (Environment.NewLine, xSortedTargets.Select (x => $"{x.DirectoryPath} | {x.Options}")));
+
+                Utility.AddLogLine (string.Join (Environment.NewLine, xSortedTargets.
+                    Where (x => Directory.Exists (x.DirectoryPath)).
+                    Select (x => $"{x.DirectoryPath} | {x.Options}")));
 
                 foreach (var xTarget in xSortedTargets)
                 {
+                    if (Directory.Exists (xTarget.DirectoryPath) == false)
+                        continue;
+
                     Utility.AddLogLine ();
                     Utility.AddLogLine ($"[{xTarget.DirectoryPath}]");
                     Utility.AddLogLine ("Options: " + xTarget.Options);
