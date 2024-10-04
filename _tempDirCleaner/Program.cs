@@ -28,8 +28,11 @@ namespace _tempDirCleaner
                         {
                             if (Enum.TryParse <CleaningOptions> (xParts [1].Trim (), ignoreCase: true, out var xOptions))
                             {
-                                xTargets.Add ((xDirectoryPath, xOptions));
-                                continue;
+                                if (xOptions.HasFlag (CleaningOptions.DeleteAllFiles) || xOptions.HasFlag (CleaningOptions.DeleteFilesOlderThan24Hours)) // At least one of these options must be set.
+                                {
+                                    xTargets.Add ((xDirectoryPath, xOptions));
+                                    continue;
+                                }
                             }
                         }
                     }
@@ -39,6 +42,117 @@ namespace _tempDirCleaner
 
                 if (xTargets.Count == 0)
                     throw new Exception ($"No valid targets found in {Utility.TargetsFileName}.");
+
+                var xSortedTargets = xTargets.OrderBy (x => x.DirectoryPath, StringComparer.OrdinalIgnoreCase).ToArray ();
+
+                Utility.AddLogLine ("[Targets]");
+                Utility.AddLogLine (string.Join (Environment.NewLine, xSortedTargets.Select (x => $"{x.DirectoryPath} | {x.Options}")));
+
+                foreach (var xTarget in xSortedTargets)
+                {
+                    Utility.AddLogLine ();
+                    Utility.AddLogLine ($"[{xTarget.DirectoryPath}]");
+                    Utility.AddLogLine ("Options: " + xTarget.Options);
+
+                    bool xDeletesAllFiles = xTarget.Options.HasFlag (CleaningOptions.DeleteAllFiles),
+                         xDeletesEmptyDirectories = xTarget.Options.HasFlag (CleaningOptions.DeleteEmptyDirectories);
+
+                    DateTime x24HoursAgoUtc = DateTime.UtcNow.AddHours (-24);
+
+                    int xHandledFileCount = 0,
+                        xHandledDirectoryCount = 0,
+                        xDeletedFileCount = 0,
+                        xDeletedDirectoryCount = 0;
+
+                    string _GetHandledStatistics () => $"Handled {xHandledFileCount} files and {xHandledDirectoryCount} directories.";
+
+                    string _GetDeletedStatistics () => $"Deleted {xDeletedFileCount} files and {xDeletedDirectoryCount} directories.";
+
+                    void _DisplayStatistics () => Console.Write ($"\r{_GetHandledStatistics ()} {_GetDeletedStatistics ()}");
+
+                    void _HandleDirectory (DirectoryInfo directory, int depth)
+                    {
+                        try
+                        {
+                            foreach (DirectoryInfo xSubdirectory in directory.GetDirectories ().OrderBy (x => x.Name, StringComparer.OrdinalIgnoreCase))
+                                _HandleDirectory (xSubdirectory, depth + 1);
+
+                            foreach (FileInfo xFile in directory.GetFiles ().OrderBy (x => x.Name, StringComparer.OrdinalIgnoreCase))
+                            {
+                                try
+                                {
+                                    if (xDeletesAllFiles ||
+                                       (xDeletesAllFiles == false && xFile.LastWriteTimeUtc < x24HoursAgoUtc)) // LastWriteTimeUtc may throw an exception.
+                                    {
+                                        xFile.Attributes = FileAttributes.Normal;
+                                        xFile.Delete ();
+
+                                        Utility.AddLogLine ($"Deleted file: {xFile.FullName}");
+
+                                        xDeletedFileCount ++;
+                                        _DisplayStatistics ();
+                                    }
+                                }
+
+                                catch
+                                {
+                                    Utility.AddLogLine ($"Error deleting file: {xFile.FullName}");
+                                    Console.WriteLine ($"\rError deleting file: {xFile.FullName}");
+                                }
+
+                                finally
+                                {
+                                    xHandledFileCount ++;
+                                    _DisplayStatistics ();
+                                }
+                            }
+
+                            if (depth > 0 && xDeletesEmptyDirectories)
+                            {
+                                try
+                                {
+                                    if (directory.GetFileSystemInfos ().Length == 0) // GetFileSystemInfos may throw an exception.
+                                    {
+                                        directory.Attributes = FileAttributes.Directory;
+                                        directory.Delete ();
+
+                                        Utility.AddLogLine ($"Deleted directory: {directory.FullName}");
+
+                                        xDeletedDirectoryCount ++;
+                                        _DisplayStatistics ();
+                                    }
+                                }
+
+                                catch
+                                {
+                                    Utility.AddLogLine ($"Error deleting directory: {directory.FullName}");
+                                    Console.WriteLine ($"\rError deleting directory: {directory.FullName}");
+                                }
+                            }
+                        }
+
+                        catch
+                        {
+                            Utility.AddLogLine ($"Error handling directory: {directory.FullName}");
+                            Console.WriteLine ($"\rError handling directory: {directory.FullName}");
+                        }
+
+                        finally
+                        {
+                            xHandledDirectoryCount ++;
+                            _DisplayStatistics ();
+                        }
+                    }
+
+                    DirectoryInfo xTargetDirectory = new (xTarget.DirectoryPath);
+                    _HandleDirectory (xTargetDirectory, depth: 0);
+
+                    Utility.AddLogLine (_GetHandledStatistics ());
+                    Utility.AddLogLine (_GetDeletedStatistics ());
+
+                    _DisplayStatistics ();
+                    Console.WriteLine ();
+                }
             }
 
             catch (Exception xException)
@@ -50,6 +164,13 @@ namespace _tempDirCleaner
 
             finally
             {
+                if (Utility.Logs.Count > 0)
+                {
+                    Directory.CreateDirectory (Utility.LogsDirectoryPath);
+                    File.WriteAllLines (Utility.LogFilePath, Utility.Logs, Encoding.UTF8);
+                    Console.WriteLine ($"Logs saved to: {Utility.LogFilePath}");
+                }
+
                 Console.Write ("Press any key to exit: ");
                 Console.ReadKey (true);
                 Console.WriteLine ();
