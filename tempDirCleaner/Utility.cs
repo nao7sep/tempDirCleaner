@@ -1,6 +1,6 @@
 ﻿using System.Reflection;
 
-namespace _tempDirCleaner
+namespace tempDirCleaner
 {
     public static class Utility
     {

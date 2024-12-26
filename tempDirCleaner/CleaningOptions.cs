@@ -1,4 +1,4 @@
-﻿namespace _tempDirCleaner
+﻿namespace tempDirCleaner
 {
     [Flags]
     public enum CleaningOptions

@@ -16,7 +16,8 @@
 
         <Configuration></Configuration>
 
-        <Version>0.2</Version><!-- Update App.manifest too. -->
+        <!-- Update App.manifest too. -->
+        <Version>0.3</Version>
         <AssemblyVersion></AssemblyVersion>
         <FileVersion></FileVersion>
         <InformationalVersion></InformationalVersion>
